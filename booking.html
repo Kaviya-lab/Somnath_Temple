@@ -1,128 +1,172 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Booking - Somnath Temple</title>
-  <style>
-    body { margin:0; font-family: Arial, sans-serif; background:#f9f9f9; }
-    nav { background:#2c3e50; padding:15px; display:flex; justify-content:space-between; align-items:center; }
-    nav .logo { color:white; font-size:20px; font-weight:bold; }
-    nav ul { list-style:none; display:flex; margin:0; padding:0; }
-    nav ul li { margin-left:20px; }
-    nav ul li a { color:white; text-decoration:none; font-size:16px; }
-    nav ul li a:hover { color:#f39c12; }
-
-    .container { max-width:600px; margin:40px auto; background:white; padding:30px; border-radius:10px; box-shadow:0 2px 6px rgba(0,0,0,0.2); }
-    h2 { text-align:center; color:#2c3e50; margin-bottom:20px; }
-
-    label { display:block; margin-top:10px; font-weight:bold; }
-    input, select { width:100%; padding:8px; margin-top:5px; border-radius:5px; border:1px solid #ccc; }
-
-    button { margin-top:20px; width:100%; padding:10px; background-color:#2c3e50; color:white; border:none; border-radius:5px; font-size:16px; cursor:pointer; }
-    button:hover { background-color:#f39c12; }
-
-    #predictionResult { margin-top:15px; font-weight:bold; color:#e74c3c; text-align:center; }
-    .hidden { display:none; }
-    .form-toggle { margin-top:10px; text-align:center; cursor:pointer; color:#3498db; }
-  </style>
+    <meta charset="UTF-8">
+    <title>Somnath Temple Booking</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .hidden { display: none; }
+        input, button { margin: 5px 0; padding: 5px; }
+        #qrCode img { max-width: 200px; margin-top: 10px; }
+    </style>
 </head>
 <body>
-
-  <nav>
-    <div class="logo">Somnath Temple</div>
-    <ul>
-      <li><a href="index.html">Home</a></li>
-      <li><a href="booking.html">Booking</a></li>
-      <li><a href="mybookings.html">My Bookings</a></li>
-    </ul>
-  </nav>
-
-  <div class="container">
-    <h2>Login / Signup</h2>
+    <h1>Somnath Temple Booking</h1>
 
     <!-- Login Form -->
     <div id="loginForm">
-      <label>Phone Number</label>
-      <input type="text" placeholder="Enter phone number">
-      <label>Password</label>
-      <input type="password" placeholder="Enter password">
-      <button type="button" onclick="login()">Login</button>
-      <p class="form-toggle" onclick="toggleForms()">Don't have an account? Signup</p>
+        <h2>Login</h2>
+        <input type="text" id="loginPhone" placeholder="Phone"><br>
+        <input type="password" id="loginPassword" placeholder="Password"><br>
+        <button onclick="login()">Login</button>
+        <p>Or <a href="#" onclick="showSignup()">Sign Up</a></p>
     </div>
 
     <!-- Signup Form -->
     <div id="signupForm" class="hidden">
-      <label>Name</label>
-      <input type="text" placeholder="Enter name">
-      <label>Phone Number</label>
-      <input type="text" placeholder="Enter phone number">
-      <label>Password</label>
-      <input type="password" placeholder="Enter password">
-      <label>Email</label>
-      <input type="email" placeholder="Enter email">
-      <button type="button" onclick="signup()">Signup</button>
-      <p class="form-toggle" onclick="toggleForms()">Already have an account? Login</p>
+        <h2>Sign Up</h2>
+        <input type="text" id="signupName" placeholder="Name"><br>
+        <input type="text" id="signupPhone" placeholder="Phone"><br>
+        <input type="email" id="signupEmail" placeholder="Email"><br>
+        <input type="password" id="signupPassword" placeholder="Password"><br>
+        <button onclick="signup()">Sign Up</button>
+        <p>Or <a href="#" onclick="showLogin()">Login</a></p>
     </div>
 
     <!-- Booking Form -->
     <div id="bookingForm" class="hidden">
-      <h2>Book Your Darshan Slot</h2>
-      <label>Date</label>
-      <input type="date">
-      <label>Time Slot</label>
-      <select>
-        <option>6:00 AM - 7:00 AM</option>
-        <option>7:00 AM - 8:00 AM</option>
-        <option>8:00 AM - 9:00 AM</option>
-        <option>9:00 AM - 10:00 AM</option>
-        <option>10:00 AM - 11:00 AM</option>
-        <option>11:00 AM - 12:00 PM</option>
-        <option>12:00 PM - 1:00 PM</option>
-        <option>1:00 PM - 2:00 PM</option>
-        <option>2:00 PM - 3:00 PM</option>
-        <option>3:00 PM - 4:00 PM</option>
-        <option>4:00 PM - 5:00 PM</option>
-        <option>5:00 PM - 6:00 PM</option>
-        <option>6:00 PM - 7:00 PM</option>
-        <option>7:00 PM - 8:00 PM</option>
-        <option>8:00 PM - 9:00 PM</option>
-      </select>
-      <label>Number of People</label>
-      <input type="number" placeholder="Enter number of people">
+        <h2>Booking Details</h2>
+        <label>Date: <input type="date" id="bookingDate"></label><br>
+        <label>Time: <input type="time" id="bookingTime"></label><br>
+        <label>Number of People: <input type="number" id="numPeople" min="1"></label><br>
+        <button onclick="generatePeopleFields()">Add People Details</button>
 
-      <button id="predictBtn" type="button">Predict Crowd</button>
-      <p id="predictionResult"></p>
+        <div id="peopleDetails"></div>
 
-      <button type="button" onclick="alert('Booking Confirmed! Booking ID: 12345')">Book Now</button>
+        <button onclick="predictCrowd()">Predict Crowd</button>
+        <p id="crowdPrediction"></p>
+
+        <button onclick="bookNow()">Book Now</button>
     </div>
-  </div>
 
-  <script>
-    function toggleForms() {
-      document.getElementById('loginForm').classList.toggle('hidden');
-      document.getElementById('signupForm').classList.toggle('hidden');
-    }
+    <!-- Booking Confirmation -->
+    <div id="bookingConfirmation"></div>
 
-    function login() {
-      // Dummy login
-      alert("Logged in successfully!");
-      document.getElementById('loginForm').classList.add('hidden');
-      document.getElementById('bookingForm').classList.remove('hidden');
-    }
+    <script>
+        function showSignup() {
+            document.getElementById('loginForm').classList.add('hidden');
+            document.getElementById('signupForm').classList.remove('hidden');
+        }
+        function showLogin() {
+            document.getElementById('signupForm').classList.add('hidden');
+            document.getElementById('loginForm').classList.remove('hidden');
+        }
 
-    function signup() {
-      // Dummy signup
-      alert("Signup successful!");
-      document.getElementById('signupForm').classList.add('hidden');
-      document.getElementById('bookingForm').classList.remove('hidden');
-    }
+        function login() {
+            const phone = document.getElementById('loginPhone').value;
+            const password = document.getElementById('loginPassword').value;
 
-    document.getElementById('predictBtn').addEventListener('click', function() {
-      let prediction = "High Crowd (82%)"; // dummy
-      document.getElementById('predictionResult').innerText = "Predicted Crowd: " + prediction;
-    });
-  </script>
+            fetch("http://127.0.0.1:5000/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ phone, password })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.success) {
+                    localStorage.setItem("token", data.token);
+                    alert("Login successful!");
+                    document.getElementById('loginForm').classList.add('hidden');
+                    document.getElementById('bookingForm').classList.remove('hidden');
+                } else alert(data.message);
+            });
+        }
 
+        function signup() {
+            const name = document.getElementById('signupName').value;
+            const phone = document.getElementById('signupPhone').value;
+            const email = document.getElementById('signupEmail').value;
+            const password = document.getElementById('signupPassword').value;
+
+            fetch("http://127.0.0.1:5000/signup", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name, phone, email, password })
+            })
+            .then(res => res.json())
+            .then(data => {
+                alert(data.message);
+                if(data.success) showLogin();
+            });
+        }
+
+        function generatePeopleFields() {
+            const num = parseInt(document.getElementById('numPeople').value);
+            const container = document.getElementById('peopleDetails');
+            container.innerHTML = "";
+            for(let i=1; i<=num; i++){
+                container.innerHTML += `<h4>Person ${i}</h4>
+                <input type="text" id="personName${i}" placeholder="Name">
+                <input type="number" id="personAge${i}" placeholder="Age">
+                <input type="text" id="personGender${i}" placeholder="Gender"><br>`;
+            }
+        }
+
+        function predictCrowd() {
+            const date = document.getElementById('bookingDate').value;
+            const token = localStorage.getItem("token");
+
+            fetch("http://127.0.0.1:5000/predict", {
+                method: "POST",
+                headers: { 
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer " + token
+                },
+                body: JSON.stringify({ date })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.success){
+                    document.getElementById('crowdPrediction').innerText = "Predicted Crowd: " + data.predicted_crowd;
+                } else alert(data.message);
+            });
+        }
+
+        function bookNow() {
+            const date = document.getElementById('bookingDate').value;
+            const time = document.getElementById('bookingTime').value;
+            const num_people = parseInt(document.getElementById('numPeople').value);
+
+            const people = [];
+            for(let i=1; i<=num_people; i++){
+                people.push({
+                    name: document.getElementById(personName${i}).value,
+                    age: parseInt(document.getElementById(personAge${i}).value),
+                    gender: document.getElementById(personGender${i}).value
+                });
+            }
+
+            const token = localStorage.getItem("token");
+
+            fetch("http://127.0.0.1:5000/booking", {
+                method: "POST",
+                headers: { 
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer " + token
+                },
+                body: JSON.stringify({ date, time, num_people, people })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.success){
+                    document.getElementById("bookingConfirmation").innerHTML = `
+                        <h3>Booking Confirmed!</h3>
+                        <p>Booking ID: ${data.booking_id}</p>
+                        <img src="data:image/png;base64,${data.qr_code}" alt="QR Code">
+                    `;
+                } else alert(data.message);
+            });
+        }
+    </script>
 </body>
 </html>
