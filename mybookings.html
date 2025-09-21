@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Bookings - Somnath Temple</title>
+  <style>
+    body { margin:0; font-family: Arial, sans-serif; background:#f9f9f9; }
+    nav { background:#2c3e50; padding:15px; display:flex; justify-content:space-between; align-items:center; }
+    nav .logo { color:white; font-size:20px; font-weight:bold; }
+    nav ul { list-style:none; display:flex; margin:0; padding:0; }
+    nav ul li { margin-left:20px; }
+    nav ul li a { color:white; text-decoration:none; font-size:16px; }
+    nav ul li a:hover { color:#f39c12; }
+
+    .container { max-width:700px; margin:40px auto; background:white; padding:30px; border-radius:10px; box-shadow:0 2px 6px rgba(0,0,0,0.2); }
+    h2 { text-align:center; color:#2c3e50; margin-bottom:20px; }
+
+    label, input, button { display:block; width:100%; margin-top:10px; }
+    input { padding:8px; border-radius:5px; border:1px solid #ccc; }
+    button { padding:10px; margin-top:10px; background:#2c3e50; color:white; border:none; border-radius:5px; cursor:pointer; }
+    button:hover { background:#f39c12; }
+
+    table { width:100%; border-collapse: collapse; margin-top:20px; }
+    th, td { padding:12px; border-bottom:1px solid #ddd; text-align:left; }
+    th { background:#f39c12; color:white; }
+
+    .hidden { display:none; }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <div class="logo">Somnath Temple</div>
+    <ul>
+      <li><a href="index.html">Home</a></li>
+      <li><a href="booking.html">Booking</a></li>
+      <li><a href="mybookings.html">My Bookings</a></li>
+    </ul>
+  </nav>
+
+  <div class="container">
+    <h2>Login to View Your Bookings</h2>
+
+    <!-- Login Form -->
+    <div id="loginForm">
+      <label>Phone Number</label>
+      <input type="text" placeholder="Enter phone number">
+      <label>Password</label>
+      <input type="password" placeholder="Enter password">
+      <button type="button" onclick="login()">Login</button>
+    </div>
+
+    <!-- Booking Table -->
+    <div id="bookingTable" class="hidden">
+      <h2>My Bookings</h2>
+      <table>
+        <tr>
+          <th>Booking ID</th>
+          <th>Date</th>
+          <th>Time</th>
+          <th>No. of People</th>
+        </tr>
+        <tr>
+          <td>12345</td>
+          <td>2025-09-25</td>
+          <td>7:00 AM - 8:00 AM</td>
+          <td>3</td>
+        </tr>
+        <tr>
+          <td>12346</td>
+          <td>2025-09-26</td>
+          <td>8:00 AM - 9:00 AM</td>
+          <td>2</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    function login() {
+      // Dummy login
+      alert("Logged in successfully!");
+      document.getElementById('loginForm').classList.add('hidden');
+      document.getElementById('bookingTable').classList.remove('hidden');
+    }
+  </script>
+
+</body>
+</html>
