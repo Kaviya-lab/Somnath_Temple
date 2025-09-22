@@ -59,7 +59,7 @@
                     const container = document.getElementById("myBookingsList");
                     container.innerHTML = "";
                     data.bookings.forEach(b => {
-                        container.innerHTML += <li>Booking ID: ${b.booking_id}, Date: ${b.date}, Time: ${b.time}, People: ${b.no_of_pl}</li>;
+                        container.innerHTML += `<li>Booking ID: ${b.booking_id}, Date: ${b.date}, Time: ${b.time}, People: ${b.no_of_pl}</li>`;
                     });
                 } else alert(data.message);
             });

@@ -133,9 +133,9 @@
   <nav>
     <div class="logo">Somnath Temple</div>
     <ul>
-      <li><a href="index.html">Home</a></li>
-      <li><a href="booking.html">Booking</a></li>
-      <li><a href="mybookings.html">My Bookings</a></li>
+      <li><a href="{{ url_for('home') }}">Home</a></li>
+      <li><a href="{{ url_for('booking_page') }}">Booking</a></li>
+      <li><a href="{{ url_for('mybookings_page') }}">My Bookings</a></li>
     </ul>
   </nav>
 

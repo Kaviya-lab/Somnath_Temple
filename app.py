@@ -9,9 +9,14 @@ import io
 import base64
 from functools import wraps
 import joblib
+from flask_cors import CORS
+
+app = Flask(__name__)
+CORS(app)  # Add this after creating app
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your_secret_key_here'  # change in production
+
 
 # ------------------ DATABASE ------------------
 def get_db_connection():
@@ -135,19 +140,33 @@ def predict(user_id):
 
     if not date_str:
         return jsonify({"success": False, "message": "Date is required"}), 400
+    date_obj = None
+    for fmt in ("%Y-%m-%d", "%d/%m/%Y", "%d-%m-%Y"):
+        try:
+            date_obj = datetime.datetime.strptime(date_str, fmt)
+            break
+        except ValueError:
+            continue
 
-    try:
-        date_obj = datetime.datetime.strptime(date_str, "%Y-%m-%d")
-        day_of_week = date_obj.weekday()
-        month = date_obj.month
-        features = [[day_of_week, month]]
-        predicted_crowd = ml_model.predict(features)[0]
-    except ValueError:
+    if not date_obj:
         return jsonify({"success": False, "message": "Invalid date format. Use YYYY-MM-DD"}), 400
-    except Exception as e:
-        return jsonify({"success": False, "message": f"Prediction error: {str(e)}"}), 500
 
-    return jsonify({"success": True, "predicted_crowd": int(predicted_crowd)}), 200
+    # Now convert to features for your model
+    day_of_week = date_obj.weekday()
+    month = date_obj.month
+    features = [[day_of_week, month]]
+    predicted_crowd = ml_model.predict(features)[0]
+    return jsonify({"success": True, "date": date_obj.strftime("%Y-%m-%d"), "prediction": predicted_crowd})
+#   try:
+#        date_obj = datetime.datetime.strptime(date_str, "%Y-%m-%d")
+#        day_of_week = date_obj.weekday()
+#        month = date_obj.month
+#        features = [[day_of_week, month]]       predicted_crowd = ml_model.predict(features)[0]
+#   except ValueError:
+#      return jsonify({"success": False, "message": "Invalid date format. Use YYYY-MM-DD"}), 400
+# except Exception as e:#    return jsonify({"success": False, "message": f"Prediction error: {str(e)}"}), 500
+
+
 
 # ------------------ BOOKING ------------------
 @app.route('/booking', methods=['POST'])
@@ -252,6 +271,21 @@ def booking_details(user_id, booking_id):
 @app.route('/health', methods=['GET'])
 def health_check():
     return jsonify({"status": "OK", "message": "Server is running"})
+
+from flask import render_template
+
+@app.route('/')
+def home():
+    return render_template('index.html')
+
+@app.route('/booking_page')
+def booking_page():
+    return render_template('booking.html')
+
+@app.route('/mybookings_page')
+def mybookings_page():
+    return render_template('mybookings.html')
+
 
 # ------------------ RUN APP ------------------
 if __name__ == '__main__':

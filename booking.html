@@ -88,17 +88,21 @@
             const email = document.getElementById('signupEmail').value;
             const password = document.getElementById('signupPassword').value;
 
-            fetch("http://127.0.0.1:5000/signup", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ name, phone, email, password })
-            })
-            .then(res => res.json())
-            .then(data => {
-                alert(data.message);
-                if(data.success) showLogin();
-            });
-        }
+            console.log("Signup data:", {name, phone, email, password}); // check values
+
+            fetch("/signup", {  // use relative URL
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name, phone, email, password })
+        })
+        .then(res => res.json())
+        .then(data => {
+            console.log("Signup response:", data); // check response
+            alert(data.message);
+            if(data.success) showLogin();
+        })
+        .catch(err => console.error("Signup fetch error:", err));
+    }
 
         function generatePeopleFields() {
             const num = parseInt(document.getElementById('numPeople').value);
@@ -140,9 +144,9 @@
             const people = [];
             for(let i=1; i<=num_people; i++){
                 people.push({
-                    name: document.getElementById(personName${i}).value,
-                    age: parseInt(document.getElementById(personAge${i}).value),
-                    gender: document.getElementById(personGender${i}).value
+                    name: document.getElementById(`personName${i}`).value,
+                    age: parseInt(document.getElementById(`personAge${i}`).value),
+                    gender: document.getElementById(`personGender${i}`).value
                 });
             }
 
