@@ -25,6 +25,13 @@
         <h2>Your Bookings</h2>
         <ul id="myBookingsList"></ul>
     </div>
+    <!-- Booking Details -->
+<div id="bookingDetails" class="hidden">
+    <h2>Booking Details</h2>
+    <p id="detailsText"></p>
+    <img id="detailsQR" src="" alt="QR Code" style="max-width:200px;"/>
+</div>
+
 
     <script>
         function login() {
@@ -59,11 +66,30 @@
                     const container = document.getElementById("myBookingsList");
                     container.innerHTML = "";
                     data.bookings.forEach(b => {
-                        container.innerHTML += `<li>Booking ID: ${b.booking_id}, Date: ${b.date}, Time: ${b.time}, People: ${b.no_of_pl}</li>`;
-                    });
+                        container.innerHTML += `<li onclick="viewBooking(${b.booking_id})" style="cursor:pointer; color:blue;">>Booking ID: ${b.booking_id}, Date: ${b.date}, Time: ${b.time}, People: ${b.no_of_pl}</li>;
+                    `});
                 } else alert(data.message);
             });
+        
         }
+        function viewBooking(bookingId) {
+    const token = localStorage.getItem("token");
+
+    fetch(`http://127.0.0.1:5000/booking/${bookingId}`, {
+        headers: { "Authorization": "Bearer " + token }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if(data.success){
+            document.getElementById("bookingDetails").classList.remove("hidden");
+            document.getElementById("detailsText").innerText = 
+                `Booking ID: ${data.booking_id}`;
+            document.getElementById("detailsQR").src = `data:image/png;base64,${data.qr_code}`;
+        } else {
+            alert(data.message);
+        }
+    });
+}
     </script>
 </body>
 </html>

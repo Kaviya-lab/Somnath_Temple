@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 import sqlite3
 import hashlib
 import re
@@ -10,11 +10,12 @@ import base64
 from functools import wraps
 import joblib
 from flask_cors import CORS
+import pandas as pd
+import numpy as np
 
+# ------------------ APP CONFIG ------------------
 app = Flask(__name__)
-CORS(app)  # Add this after creating app
-
-app = Flask(__name__)
+CORS(app)  # Allow frontend to call API
 app.config['SECRET_KEY'] = 'your_secret_key_here'  # change in production
 
 
@@ -24,12 +25,15 @@ def get_db_connection():
     conn.row_factory = sqlite3.Row
     return conn
 
+
 # ------------------ HELPERS ------------------
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
+
 def is_valid_phone(phone):
     return bool(re.match(r'^\d{10}$', phone))
+
 
 def generate_qr(data):
     qr = qrcode.QRCode(box_size=10, border=4)
@@ -39,6 +43,7 @@ def generate_qr(data):
     buffered = io.BytesIO()
     img.save(buffered, format="PNG")
     return base64.b64encode(buffered.getvalue()).decode()
+
 
 # ------------------ JWT DECORATOR ------------------
 def token_required(f):
@@ -61,6 +66,7 @@ def token_required(f):
             return jsonify({"success": False, "message": "Token invalid"}), 401
         return f(user_id, *args, **kwargs)
     return decorated
+
 
 # ------------------ SIGNUP ------------------
 @app.route('/signup', methods=['POST'])
@@ -94,6 +100,7 @@ def signup():
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
 
+
 # ------------------ LOGIN ------------------
 @app.route('/login', methods=['POST'])
 def login():
@@ -121,52 +128,115 @@ def login():
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
 
+
 # ------------------ LOAD ML MODEL ------------------
 try:
-    ml_model = joblib.load("somnath_crowd_model.pkl")
+    ml_model = joblib.load("somnath_crowd_model2.pkl")
+    print("✅ ML model loaded successfully")
 except Exception as e:
-    print(f"Error loading ML model: {e}")
+    print(f"❌ Error loading ML model: {e}")
     ml_model = None
+
 
 # ------------------ PREDICT CROWD ------------------
 @app.route('/predict', methods=['POST'])
-@token_required
-def predict(user_id):
+# @token_required   # Uncomment later when frontend sends JWT
+def predict(user_id=None):
     if not ml_model:
         return jsonify({"success": False, "message": "ML model not loaded"}), 500
 
-    data = request.get_json()
-    date_str = data.get("date")  # expecting YYYY-MM-DD
+    try:
+        data = request.get_json(force=True)
+        print("Incoming JSON:", data)
 
-    if not date_str:
-        return jsonify({"success": False, "message": "Date is required"}), 400
-    date_obj = None
-    for fmt in ("%Y-%m-%d", "%d/%m/%Y", "%d-%m-%Y"):
+        # ---------------- Parse Date ----------------
+        date_str = data.get("date")
+        if not date_str:
+            return jsonify({"success": False, "message": "Date is required (YYYY-MM-DD)"}), 400
+
         try:
-            date_obj = datetime.datetime.strptime(date_str, fmt)
-            break
+            date_obj = datetime.datetime.strptime(date_str, "%Y-%m-%d")
         except ValueError:
-            continue
+            return jsonify({"success": False, "message": "Invalid date format (use YYYY-MM-DD)"}), 400
+        print(date_str)
+        # ---------------- Build Features ----------------
+        weekday = date_obj.weekday()   # 0=Monday
+        month = date_obj.month
+        print(weekday)
+        print(month)
+        # What features does the model expect?
+        user_date = pd.Timestamp(date_obj)
+        is_weekend = 1 if date_obj.weekday() >= 5 else 0
+        
+        df = pd.read_csv("holidays.csv")
+        df["date"] = pd.to_datetime(df["date"])
 
-    if not date_obj:
-        return jsonify({"success": False, "message": "Invalid date format. Use YYYY-MM-DD"}), 400
+# Check if holiday/festival in your dataset
+        date_ts = pd.to_datetime(date_obj)  # use this for pandas comparisons
 
-    # Now convert to features for your model
-    day_of_week = date_obj.weekday()
-    month = date_obj.month
-    features = [[day_of_week, month]]
-    predicted_crowd = ml_model.predict(features)[0]
-    return jsonify({"success": True, "date": date_obj.strftime("%Y-%m-%d"), "prediction": predicted_crowd})
-#   try:
-#        date_obj = datetime.datetime.strptime(date_str, "%Y-%m-%d")
-#        day_of_week = date_obj.weekday()
-#        month = date_obj.month
-#        features = [[day_of_week, month]]       predicted_crowd = ml_model.predict(features)[0]
-#   except ValueError:
-#      return jsonify({"success": False, "message": "Invalid date format. Use YYYY-MM-DD"}), 400
-# except Exception as e:#    return jsonify({"success": False, "message": f"Prediction error: {str(e)}"}), 500
+        is_holiday = 1 if date_ts in pd.to_datetime(df[df.is_holiday==1]["date"]).tolist() else 0
+        is_festival = 1 if date_ts in pd.to_datetime(df[df.is_festival==1]["date"]).tolist() else 0
 
+# Festival strength
+        if date_str in df['date'].values:
+            festival_strength = float(df.loc[df['date']==date_str, 'festival_strength'])
+        else:
+            festival_strength = 1.0
 
+# Temp / Rain (assume default or average)
+        temp_c = 25
+        rain_mm = 0
+
+# Lag features
+        lag_1 = int(df.loc[df['date'] == user_date - pd.Timedelta(days=1), 'visitor_count'].values[0])\
+        if (user_date - pd.Timedelta(days=1)) in df['date'].values else 5000
+        lag_7 = int(df.loc[df['date'] == user_date - pd.Timedelta(days=7), 'visitor_count'].values[0])\
+        if (user_date - pd.Timedelta(days=7)) in df['date'].values else 5000
+# Day-of-year features
+        doy = date_obj.timetuple().tm_yday
+
+        doy_sin = np.sin(2 * np.pi * doy / 365)
+        doy_cos = np.cos(2 * np.pi * doy / 365)
+
+# Create a DataFrame row
+        row = pd.DataFrame({
+            "is_weekend": [is_weekend],
+            "is_holiday": [is_holiday],
+            "is_festival": [is_festival],
+            "festival_strength": [festival_strength],
+            "temp_c": [temp_c],
+            "rain_mm": [rain_mm],
+            "lag_1": [lag_1],
+            "lag_7": [lag_7],
+            "doy_sin": [doy_sin],
+            "doy_cos": [doy_cos]
+        })
+
+# --- Step 3: Predict visitor count ---
+        features = ["is_weekend","is_holiday","is_festival","festival_strength",
+            "temp_c","rain_mm","lag_1","lag_7","doy_sin","doy_cos"]
+
+        predicted_visitors = int(ml_model.predict(row[features])[0])
+        # ---------------- Prediction ----------------
+        
+        print(predicted_visitors)
+        # Map to crowd level
+        if predicted_visitors < 5000:
+            crowd_level = "Low"
+        elif predicted_visitors < 15000:
+            crowd_level = "Medium"
+        else:
+            crowd_level = "High"
+
+        return jsonify({
+            "success": True,
+            "date": date_obj.strftime("%Y-%m-%d"),
+            "predicted_visitors": round(predicted_visitors),
+            "crowd_level": crowd_level
+        }), 200
+
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
 
 # ------------------ BOOKING ------------------
 @app.route('/booking', methods=['POST'])
@@ -177,26 +247,24 @@ def booking(user_id):
         date = data.get('date')
         time = data.get('time')
         num_people = data.get('num_people')
-        people = data.get('people')  # list of {name, age, gender}
+        people = data.get('people')
 
         if not all([date, time, num_people, people]):
-            return jsonify({"success": False, "message": "Date, time, number of people, and people details are required"}), 400
+            return jsonify({"success": False, "message": "Missing booking details"}), 400
         if not isinstance(num_people, int) or num_people <= 0:
-            return jsonify({"success": False, "message": "Number of people must be a positive integer"}), 400
+            return jsonify({"success": False, "message": "Invalid number of people"}), 400
         if len(people) != num_people:
-            return jsonify({"success": False, "message": "Number of people does not match details provided"}), 400
+            return jsonify({"success": False, "message": "People count mismatch"}), 400
 
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        # 1. Insert main booking
         cursor.execute(
             'INSERT INTO bookings (user_id, date, time, no_of_pl, status) VALUES (?, ?, ?, ?, ?)',
             (user_id, date, time, num_people, 'Confirmed')
         )
         booking_id = cursor.lastrowid
 
-        # 2. Insert each person in persons table
         for p in people:
             cursor.execute(
                 'INSERT INTO persons (booking_id, name, age, gender) VALUES (?, ?, ?, ?)',
@@ -206,9 +274,8 @@ def booking(user_id):
         conn.commit()
         conn.close()
 
-        # Prepare QR code with booking and person details
         people_str = "; ".join([f"{p['name']} ({p['age']}, {p.get('gender','')})" for p in people])
-        qr_data = f"Booking ID: {booking_id}\nDate: {date}\nTime: {time}\nPeople ({num_people}): {people_str}"
+        qr_data = f"Booking ID: {booking_id}\nDate: {date}\nTime: {time}\nPeople: {people_str}"
         qr_base64 = generate_qr(qr_data)
 
         return jsonify({
@@ -219,7 +286,8 @@ def booking(user_id):
         }), 201
 
     except Exception as e:
-        return jsonify({"success": False, "message": f"Internal server error: {str(e)}"}), 500
+        return jsonify({"success": False, "message": str(e)}), 500
+
 
 # ------------------ VIEW BOOKINGS ------------------
 @app.route('/view_bookings', methods=['GET'])
@@ -235,7 +303,8 @@ def view_bookings(user_id):
         bookings = [{"booking_id": r["booking_id"], "date": r["date"], "time": r["time"], "no_of_pl": r["no_of_pl"]} for r in rows]
         return jsonify({"success": True, "bookings": bookings}), 200
     except Exception as e:
-        return jsonify({"success": False, "message": f"Internal server error: {str(e)}"}), 500
+        return jsonify({"success": False, "message": str(e)}), 500
+
 
 # ------------------ BOOKING DETAILS ------------------
 @app.route('/booking/<int:booking_id>', methods=['GET'])
@@ -256,7 +325,7 @@ def booking_details(user_id, booking_id):
         conn.close()
 
         people_str = "; ".join([f"{p['name']} ({p['age']}, {p['gender']})" for p in persons])
-        qr_data = f"Booking ID: {booking_row['booking_id']}\nDate: {booking_row['date']}\nTime: {booking_row['time']}\nPeople ({len(persons)}): {people_str}"
+        qr_data = f"Booking ID: {booking_row['booking_id']}\nDate: {booking_row['date']}\nTime: {booking_row['time']}\nPeople: {people_str}"
         qr_base64 = generate_qr(qr_data)
 
         return jsonify({
@@ -265,22 +334,25 @@ def booking_details(user_id, booking_id):
             "qr_code": qr_base64
         }), 200
     except Exception as e:
-        return jsonify({"success": False, "message": f"Internal server error: {str(e)}"}), 500
+        return jsonify({"success": False, "message": str(e)}), 500
+
 
 # ------------------ HEALTH CHECK ------------------
 @app.route('/health', methods=['GET'])
 def health_check():
     return jsonify({"status": "OK", "message": "Server is running"})
 
-from flask import render_template
 
+# ------------------ HTML ROUTES ------------------
 @app.route('/')
 def home():
     return render_template('index.html')
 
+
 @app.route('/booking_page')
 def booking_page():
     return render_template('booking.html')
+
 
 @app.route('/mybookings_page')
 def mybookings_page():

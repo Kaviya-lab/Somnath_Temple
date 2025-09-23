@@ -117,9 +117,11 @@
         }
 
         function predictCrowd() {
+            console.log("Predict button clicked");
             const date = document.getElementById('bookingDate').value;
             const token = localStorage.getItem("token");
-
+            console.log("Date:", date);
+            console.log("Token:", token);
             fetch("http://127.0.0.1:5000/predict", {
                 method: "POST",
                 headers: { 
@@ -130,10 +132,14 @@
             })
             .then(res => res.json())
             .then(data => {
-                if(data.success){
-                    document.getElementById('crowdPrediction').innerText = "Predicted Crowd: " + data.predicted_crowd;
-                } else alert(data.message);
-            });
+    if (data.success) {
+        document.getElementById('crowdPrediction').innerText = 
+            "Predicted Visitors: " + data.predicted_visitors + 
+            " (" + data.crowd_level + ")";
+    } else {
+        alert(data.message);
+    }
+});
         }
 
         function bookNow() {
